@@ -2,8 +2,9 @@ import telebot
 from telebot import types
 import os
 from time import sleep
-from llm_and_embeddings import create_conversational_rag_chain
-from get_retriever import extract_text_from_dir, add_document
+from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
+from get_retriever import extract_text_from_dir
+from langchain_community.vectorstores import FAISS
 os.environ['CURL_CA_BUNDLE'] = ''
 
 API_TOKEN = '7617861148:AAFKb0TIj5CVRcpHh4QcMgbNVeJpfodqtVI'
@@ -11,7 +12,8 @@ CREDENTIALS = 'YzYxYTQwYTgtZGE4ZC00NWEyLWFiOGEtZmQzNzExZDg1ZWQzOmZkMTg1OWE1LWM2Y
 
 bot = telebot.TeleBot(API_TOKEN)
 
-retriever = extract_text_from_dir()
+vectore_store = FAISS.load_local(folder_path='db/', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
+retriever = vectore_store.as_retriever(search_kwargs={"k":3})
 conversational_rag_chain, store = create_conversational_rag_chain(retriever=retriever, credentials=CREDENTIALS)
 #Получаем список загруженных файлов
 def get_file_names():
@@ -44,7 +46,7 @@ def add_documnet(document):
         with open(src, 'wb') as new_file:
             new_file.write(downloaded_file)
         
-        new_retirever = add_document(retriever=retriever, file_path=src)
+        new_retirever = add_document(retriever=retriever, file_path=file_path)
         #conversational_rag_chain, store = create_conversational_rag_chain(retriever=new_retirever, credentials=CREDENTIALS)
     except Exception as e:
         bot.send_message(document.from_user.id, e)

@@ -37,20 +37,22 @@ def creation():
     #print (retriever)
 
 def extract_from_download(pdf_files, session_id):
-    documents=[]
-    for pdf_file in pdf_files:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(pdf_file.getvalue())
-            tmp_file_path = tmp_file.name
-        loader = PyPDFLoader(tmp_file_path)
-        docs = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
-        documents.extend(text_splitter.split_documents(docs))
-        os.unlink(tmp_file_path)  # Delete the temporary file
-    embeddings = get_embeddings()
-    vectorstore = Chroma.from_documents(documents)
-    retriever = vectorstore.as_retriever()
-    return retriever
+    try:
+        documents=[]
+        for pdf_file in pdf_files:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+                tmp_file.write(pdf_file.getvalue())
+                tmp_file_path = tmp_file.name
+            loader = PyPDFLoader(tmp_file_path)
+            docs = loader.load()
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
+            documents.extend(text_splitter.split_documents(docs))
+            os.unlink(tmp_file_path)  # Delete the temporary file
+        vector_store.from_documents(documents=documents, embedding=get_embeddings())
+        retriever = vector_store.as_retriever()
+        return retriever
+    except Exception as e:
+        print (e)
 
 def add_doc(document):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200,)
@@ -59,4 +61,5 @@ def add_doc(document):
     retriever = vector_store.as_retriever()
     return retriever
 
-creation()
+if __name__ == '__main__':
+    creation()
