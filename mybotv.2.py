@@ -41,20 +41,19 @@ def send_welcome(message):
     button2 = types.KeyboardButton('Информация о боте')
     markup.add(button1, button2)
     bot.send_message(message.from_user.id, """Привет. Я RAG-бот. В меня загружены документы и я могу по ним ответить на твой вопрос""", reply_markup=markup)
-#Кнопка инфо~
-@bot.message_handler(commands=['Информация о боте'])
-def bot_info(message: types.Message):
-    bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами \n\n {get_file_names()}')
-    print(get_file_names())
+
 # Функция, обрабатывающая текстовые сообщения
 @bot.message_handler(content_types=['text'])
-def handle_text_message(message):
+def answer_the_question(message):
     user_id = message.chat.id
-    # Получение и отправка ответа через GigaChat
-    response = conversational_rag_chain.invoke({'input': message.text}, config={
-                        "configurable": {"session_id": user_id}
-                    })
-    print (response)
-    bot.send_message(user_id, response['answer'])
+    if message.text == 'Информация о боте':
+        bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами \n\n {get_file_names()}')
+    else:
+        # Получение и отправка ответа через GigaChat
+        response = conversational_rag_chain.invoke({'input': message.text}, config={
+                            "configurable": {"session_id": user_id}
+                        })
+        print (response)
+        bot.send_message(user_id, response['answer'])
 # Запуск бота
 bot.polling(none_stop=True)
