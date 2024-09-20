@@ -1,65 +1,28 @@
-from langchain_chroma import Chroma
-from llm_and_embeddings import get_embeddings
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_community.document_loaders import TextLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from llm_and_embeddings import get_embeddings
 import os
-import tempfile
 
-vector_store = Chroma(
-        collection_name="initial_rag_collection",
-        embedding_function=get_embeddings(),
-        persist_directory="db/",  # Where to save data locally, remove if not neccesary
-    )
+documents = []
+for file in os.listdir('files'):
+    if file.endswith('.pdf'):
+        pdf_path = './files/' + file
+        loader = PyPDFLoader(pdf_path)
+        documents.extend(loader.load())
+    elif file.endswith('.docx') or file.endswith('.doc'):
+        doc_path = './files/' + file
+        loader = Docx2txtLoader(doc_path)
+        documents.extend(loader.load())
+    elif file.endswith('.txt'):
+        text_path = './files/' + file
+        loader = TextLoader(text_path, encoding='utf-8')
+        documents.extend(loader.load())
 
-def creation():
-    documents=[]
-    for file in os.listdir('files'):
-        if file.endswith('.pdf'):
-            pdf_path = './files/' + file
-            loader = PyPDFLoader(pdf_path)
-            documents.extend(loader.load())
-        elif file.endswith('.docx') or file.endswith('.doc'):
-            doc_path = './files/' + file
-            loader = Docx2txtLoader(doc_path)
-            documents.extend(loader.load())
-        elif file.endswith('.txt'):
-            text_path = './files/' + file
-            loader = TextLoader(text_path, encoding='utf-8')
-            documents.extend(loader.load())
-
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200,)
-    splits = text_splitter.split_documents(documents)
-    vector_store.add_documents(documents=splits, persist_directory='db/')
-    retriever = vector_store.as_retriever()
-    return retriever
-    #print (retriever)
-
-def extract_from_download(pdf_files, session_id):
-    try:
-        documents=[]
-        for pdf_file in pdf_files:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-                tmp_file.write(pdf_file.getvalue())
-                tmp_file_path = tmp_file.name
-            loader = PyPDFLoader(tmp_file_path)
-            docs = loader.load()
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
-            documents.extend(text_splitter.split_documents(docs))
-            os.unlink(tmp_file_path)  # Delete the temporary file
-        vector_store.from_documents(documents=documents, embedding=get_embeddings())
-        retriever = vector_store.as_retriever()
-        return retriever
-    except Exception as e:
-        print (e)
-
-def add_doc(document):
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200,)
-    splits = text_splitter.split_documents([document])
-    vector_store.add_documents(documents=splits)
-    retriever = vector_store.as_retriever()
-    return retriever
-
-if __name__ == '__main__':
-    creation()
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200,)
+splits = text_splitter.split_documents(documents)
+embedding = get_embeddings()
+vectorstore = FAISS.from_documents(documents=splits, embedding=embedding)
+vectorstore.save_local(folder_path='db/')
