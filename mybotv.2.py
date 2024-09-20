@@ -3,7 +3,7 @@ from telebot import types
 import os
 from time import sleep
 from llm_and_embeddings import create_conversational_rag_chain
-from get_retriever import extract_text_from_dir
+from get_retriever import extract_text_from_dir, add_document
 os.environ['CURL_CA_BUNDLE'] = ''
 
 API_TOKEN = '7617861148:AAFKb0TIj5CVRcpHh4QcMgbNVeJpfodqtVI'
@@ -38,7 +38,14 @@ def add_documnet(document):
     try:
         file_info = bot.get_file(document.document.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
+        file_path = file_info.file_path
         bot.send_message (document.from_user.id, f'Вы загрузили следующий файл {document.document.file_name}')
+        src = 'files/' + document.document.file_name
+        with open(src, 'wb') as new_file:
+            new_file.write(downloaded_file)
+        
+        new_retirever = add_document(retriever=retriever, file_path=src)
+        #conversational_rag_chain, store = create_conversational_rag_chain(retriever=new_retirever, credentials=CREDENTIALS)
     except Exception as e:
         bot.send_message(document.from_user.id, e)
         print (document)
