@@ -84,10 +84,9 @@ class RAGBot:
             doc = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
             self.bot.send_message(document.from_user.id, f'Вы загрузили следующий файл: {document.document.file_name}')
-
             self.vector_store.add_documents(text_splitter.split_documents(doc))
             self.update_retriever()
-
+            self.file_names = self.get_file_names()
             # Удаляем загруженный файл с локальной машины
             os.remove(src)
         except Exception as e:
@@ -100,7 +99,7 @@ class RAGBot:
     
     def handle_answer_question(self, message):
         if message.text == 'ℹ️ Информация о боте':
-            self.bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами:\n\n {self.get_file_names()}')
+            self.bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами:\n\n {self.file_names}')
         elif message.text == '📄 Добавить документ':
             self.bot.send_message(message.from_user.id, 'Прикрепите документ и отправьте мне. Документ должен быть формата PDF')
         elif message.text == '🗑️ Перезапустить бота':
