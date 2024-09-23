@@ -1,96 +1,103 @@
 import telebot
 from telebot import types
 import os
-from time import sleep
 from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 os.environ['CURL_CA_BUNDLE'] = ''
 
 API_TOKEN = '7617861148:AAFKb0TIj5CVRcpHh4QcMgbNVeJpfodqtVI'
 CREDENTIALS = 'YzYxYTQwYTgtZGE4ZC00NWEyLWFiOGEtZmQzNzExZDg1ZWQzOmZkMTg1OWE1LWM2YTAtNDNiNy05YzAwLTg0NjE3YWE0YmE4Mw=='
 
-bot = telebot.TeleBot(API_TOKEN)
-vectore_store = FAISS.load_local(folder_path='db/', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
-retriever = vectore_store.as_retriever(search_kwargs={"k":3})
-conversational_rag_chain, store = create_conversational_rag_chain(retriever=retriever, credentials=CREDENTIALS)
-#Получаем список загруженных файлов
-def get_file_names():
-    file_names = []
-    for file in os.listdir('files'):
-        path = './files/' + file
-        file_names.append(os.path.basename(path))
-    return file_names
-file_names = get_file_names()
-# Функция для автоматического ответа в случае нетекстового сообщения
-@bot.message_handler(content_types=['audio',
-                                    'video',
-                                    'photo',
-                                    'sticker',
-                                    'voice',
-                                    'location',
-                                    'contact'])
-def not_text(message):
-    user_id = message.chat.id
-    bot.send_message(message.from_user.id, 'Я работаю только с текстовыми сообщениями!')
-#Добавление документа
-@bot.message_handler(content_types=['document'])
-def add_documnet(document):
-    try:
-        #Сохраняем файл локально
-        file_info = bot.get_file(document.document.file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
-        src = 'files/' + document.document.file_name
-        with open(src, 'wb') as new_file:
-            new_file.write(downloaded_file)
-        #Обновляем список файлов
-        global file_names
-        file_names = get_file_names()
-        #Загружаем документ в векторную БД
-        loader = PyPDFLoader(src)
-        doc = loader.load()
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
-        bot.send_message (document.from_user.id, f'Вы загрузили следующий файл {document.document.file_name}')
-        vectore_store.add_documents(text_splitter.split_documents(doc))
-        #Обновляем ретривер
-        global retriever  
-        retriever = vectore_store.as_retriever(search_kwargs={"k": 3})
-        global conversational_rag_chain
-        conversational_rag_chain, store = create_conversational_rag_chain(retriever=retriever, credentials=CREDENTIALS)
-        #Удаляем загруженный файл с локальной машины
-        os.remove(src)
-    except Exception as e:
-        bot.send_message(document.from_user.id, e)
-        print (document)
+class RAGBot:
+    def __init__(self, token, credentials):
+        self.bot = telebot.TeleBot(token)
+        self.credentials = credentials
+        self.vector_store = FAISS.load_local(folder_path='db/', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
+        self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
+        self.conversational_rag_chain, _ = create_conversational_rag_chain(retriever=self.retriever, credentials=self.credentials)
 
-#Кнопки
-markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-button1 = types.KeyboardButton('🗑️ Очистить историю')
-button2 = types.KeyboardButton('ℹ️ Информация о боте')
-button3 = types.KeyboardButton('📄 Добавить документ')
-markup.add(button1, button2, button3)
-#Кнопка старт и помощь
-@bot.message_handler(commands=['help', 'start'], content_types=['text'])
-def send_welcome(message):
-    bot.send_message(message.from_user.id, """Привет. Я RAG-бот. В меня загружены документы и я могу по ним ответить на твой вопрос""", reply_markup=markup)
+        self.file_names = self.get_file_names()  # Получаем список загруженных файлов
 
-# Функция, обрабатывающая текстовые сообщения
-@bot.message_handler(content_types=['text'])
-def answer_the_question(message):
-    user_id = message.chat.id
-    #Обработка кнопок
-    if message.text == 'ℹ️ Информация о боте':
-        bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами \n\n {get_file_names()}')
-    elif message.text == '📄 Добавить документ':
-        bot.send_message(message.from_user.id, 'Прикрепите документ и отправьте мне. Документ должен быть формата PDF')
-    else:
-        # Получение и отправка ответа через GigaChat
-        response = conversational_rag_chain.invoke({'input': message.text}, config={
-                            "configurable": {"session_id": user_id}
-                        })
-        print (response)
-        bot.send_message(user_id, response['answer'])
+        self.setup_message_handlers()
 
-# Запуск бота
-bot.polling(none_stop=True)
+    def setup_message_handlers(self):
+        @self.bot.message_handler(content_types=['audio', 'video', 'photo', 'sticker', 'voice', 'location', 'contact'])
+        def not_text(message):
+            self.bot.send_message(message.from_user.id, 'Я работаю только с текстовыми сообщениями!')
+
+        @self.bot.message_handler(content_types=['document'])
+        def add_document(document):
+            self.handle_add_document(document)
+
+        @self.bot.message_handler(commands=['help', 'start'], content_types=['text'])
+        def send_welcome(message):
+            self.bot.send_message(message.from_user.id, """Привет. Я RAG-бот. В меня загружены документы и я могу по ним ответить на твой вопрос""",
+                                  reply_markup=self.get_markup())
+
+        @self.bot.message_handler(content_types=['text'])
+        def answer_the_question(message):
+            self.handle_answer_question(message)
+
+    def get_markup(self):
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+        button1 = types.KeyboardButton('🗑️ Очистить историю')
+        button2 = types.KeyboardButton('ℹ️ Информация о боте')
+        button3 = types.KeyboardButton('📄 Добавить документ')
+        markup.add(button1, button2, button3)
+        return markup
+
+    def get_file_names(self):
+        return [f for f in os.listdir('files')]
+
+    def handle_add_document(self, document):
+        try:
+            if not document.document.file_name.endswith('.pdf'):
+                self.bot.send_message(document.from_user.id, "Пожалуйста, загрузите файл в формате PDF.")
+                return
+
+            # Сохраняем файл локально
+            file_info = self.bot.get_file(document.document.file_id)
+            downloaded_file = self.bot.download_file(file_info.file_path)
+            src = 'files/' + document.document.file_name
+            with open(src, 'wb') as new_file:
+                new_file.write(downloaded_file)
+
+            # Загружаем документ в векторную БД
+            loader = PyPDFLoader(src)
+            doc = loader.load()
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
+            self.bot.send_message(document.from_user.id, f'Вы загрузили следующий файл: {document.document.file_name}')
+
+            self.vector_store.add_documents(text_splitter.split_documents(doc))
+            self.update_retriever()
+
+            # Удаляем загруженный файл с локальной машины
+            os.remove(src)
+        except Exception as e:
+            self.bot.send_message(document.from_user.id, str(e))
+            print(str(e))
+
+    def update_retriever(self):
+        self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
+        self.conversational_rag_chain, _ = create_conversational_rag_chain(retriever=self.retriever, credentials=self.credentials)
+
+    def handle_answer_question(self, message):
+        if message.text == 'ℹ️ Информация о боте':
+            self.bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами:\n\n {self.get_file_names()}')
+        elif message.text == '📄 Добавить документ':
+            self.bot.send_message(message.from_user.id, 'Прикрепите документ и отправьте мне. Документ должен быть формата PDF')
+        else:
+            response = self.conversational_rag_chain.invoke({'input': message.text}, config={
+                "configurable": {"session_id": message.chat.id}
+            })
+            self.bot.send_message(message.chat.id, response['answer'])
+
+    def run(self):
+        self.bot.polling(none_stop=True)
+
+if __name__ == '__main__':
+    rag_bot = RAGBot(API_TOKEN, CREDENTIALS)
+    rag_bot.run()
