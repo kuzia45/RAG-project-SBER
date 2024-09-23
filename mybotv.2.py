@@ -41,7 +41,7 @@ def add_documnet(document):
     try:
         file_info = bot.get_file(document.document.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
-        src = 'files/' + document.document.file_name;
+        src = 'files/' + document.document.file_name
         with open(src, 'wb') as new_file:
             new_file.write(downloaded_file)
         loader = PyPDFLoader(src)
@@ -50,8 +50,10 @@ def add_documnet(document):
         bot.send_message (document.from_user.id, f'Вы загрузили следующий файл {document.document.file_name}')
         vectore_store.add_documents(text_splitter.split_documents(doc))
         #print (new_vectore_store)
-        new_retriever = vectore_store.as_retriever(search_kwargs={"k":3})
-        conversational_rag_chain, store = create_conversational_rag_chain(retriever=new_retriever, credentials=CREDENTIALS)
+        global retriever  # Поскольку мы используем глобальную переменную retriever
+        retriever = vectore_store.as_retriever(search_kwargs={"k": 3})  # Переинициализация retriever
+        global conversational_rag_chain
+        conversational_rag_chain, store = create_conversational_rag_chain(retriever=retriever, credentials=CREDENTIALS)
     except Exception as e:
         bot.send_message(document.from_user.id, e)
         print (document)
