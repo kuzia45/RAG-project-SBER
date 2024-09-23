@@ -3,15 +3,16 @@ from telebot import types
 import os
 from time import sleep
 from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
-from get_retriever import extract_text_from_dir
 from langchain_community.vectorstores import FAISS
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+import tempfile
 os.environ['CURL_CA_BUNDLE'] = ''
 
 API_TOKEN = '7617861148:AAFKb0TIj5CVRcpHh4QcMgbNVeJpfodqtVI'
 CREDENTIALS = 'YzYxYTQwYTgtZGE4ZC00NWEyLWFiOGEtZmQzNzExZDg1ZWQzOmZkMTg1OWE1LWM2YTAtNDNiNy05YzAwLTg0NjE3YWE0YmE4Mw=='
 
 bot = telebot.TeleBot(API_TOKEN)
-
 vectore_store = FAISS.load_local(folder_path='db/', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
 retriever = vectore_store.as_retriever(search_kwargs={"k":3})
 conversational_rag_chain, store = create_conversational_rag_chain(retriever=retriever, credentials=CREDENTIALS)
@@ -40,17 +41,21 @@ def add_documnet(document):
     try:
         file_info = bot.get_file(document.document.file_id)
         downloaded_file = bot.download_file(file_info.file_path)
-        file_path = file_info.file_path
-        bot.send_message (document.from_user.id, f'Вы загрузили следующий файл {document.document.file_name}')
-        src = 'files/' + document.document.file_name
+        src = 'files/' + document.document.file_name;
         with open(src, 'wb') as new_file:
             new_file.write(downloaded_file)
-        
-        new_retirever = add_document(retriever=retriever, file_path=file_path)
-        #conversational_rag_chain, store = create_conversational_rag_chain(retriever=new_retirever, credentials=CREDENTIALS)
+        loader = PyPDFLoader(src)
+        doc = loader.load()
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=300)
+        bot.send_message (document.from_user.id, f'Вы загрузили следующий файл {document.document.file_name}')
+        vectore_store.add_documents(text_splitter.split_documents(doc))
+        #print (new_vectore_store)
+        new_retriever = vectore_store.as_retriever(search_kwargs={"k":3})
+        conversational_rag_chain, store = create_conversational_rag_chain(retriever=new_retriever, credentials=CREDENTIALS)
     except Exception as e:
         bot.send_message(document.from_user.id, e)
         print (document)
+
 #Кнопка старт
 markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
 button1 = types.KeyboardButton('Очистить историю')
