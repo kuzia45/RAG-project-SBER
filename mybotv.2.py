@@ -1,15 +1,18 @@
 import telebot
 from telebot import types
 import os
+from dotenv import load_dotenv
 from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-os.environ['CURL_CA_BUNDLE'] = ''
+# Загружаем переменные окружения из файла .env
+load_dotenv()
+API_TOKEN = os.getenv('API_TOKEN')  # Получаем значение токена
+CREDENTIALS = os.getenv('CREDENTIALS')  # Получаем значение учетных данных
 
-API_TOKEN = '7617861148:AAFKb0TIj5CVRcpHh4QcMgbNVeJpfodqtVI'
-CREDENTIALS = 'YzYxYTQwYTgtZGE4ZC00NWEyLWFiOGEtZmQzNzExZDg1ZWQzOmZkMTg1OWE1LWM2YTAtNDNiNy05YzAwLTg0NjE3YWE0YmE4Mw=='
+os.environ['CURL_CA_BUNDLE'] = ''
 
 class RAGBot:
     def __init__(self, token, credentials):
