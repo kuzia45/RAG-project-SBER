@@ -1,6 +1,7 @@
 import telebot
 from telebot import types
 import os
+import sys
 from dotenv import load_dotenv
 from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
 from langchain_community.vectorstores import FAISS
@@ -26,6 +27,10 @@ class RAGBot:
 
         self.setup_message_handlers()
 
+    def restart_bot(self):
+        """Перезапускает бот."""
+        os.execv(sys.executable, ['python'] + sys.argv)
+
     def setup_message_handlers(self):
         @self.bot.message_handler(content_types=['audio', 'video', 'photo', 'sticker', 'voice', 'location', 'contact'])
         def not_text(message):
@@ -35,6 +40,12 @@ class RAGBot:
         def add_document(document):
             self.handle_add_document(document)
 
+        @self.bot.message_handler(commands=['restart'], content_types=['text'])
+        def restarting(message):
+            #"""Обрабатывает команду на перезапуск бота."""
+            self.bot.send_message(message.chat.id, "Бот перезапущен")
+            self.restart_bot()
+            
         @self.bot.message_handler(commands=['help', 'start'], content_types=['text'])
         def send_welcome(message):
             self.bot.send_message(message.from_user.id, """Привет. Я RAG-бот. В меня загружены документы и я могу по ним ответить на твой вопрос""",
@@ -46,10 +57,10 @@ class RAGBot:
 
     def get_markup(self):
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        button1 = types.KeyboardButton('🗑️ Очистить историю')
+        button1 = types.KeyboardButton('🗑️ Перезапустить бота')
         button2 = types.KeyboardButton('ℹ️ Информация о боте')
         button3 = types.KeyboardButton('📄 Добавить документ')
-        markup.add(button1, button2, button3)
+        markup.add(button2, button3, button1)
         return markup
 
     def get_file_names(self):
@@ -86,17 +97,21 @@ class RAGBot:
     def update_retriever(self):
         self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
         self.conversational_rag_chain, _ = create_conversational_rag_chain(retriever=self.retriever, credentials=self.credentials)
-
+    
     def handle_answer_question(self, message):
         if message.text == 'ℹ️ Информация о боте':
             self.bot.send_message(message.from_user.id, f'Я RAG-бот. Я могу ответить на любой вопрос, связанный со следующими документами:\n\n {self.get_file_names()}')
         elif message.text == '📄 Добавить документ':
             self.bot.send_message(message.from_user.id, 'Прикрепите документ и отправьте мне. Документ должен быть формата PDF')
+        elif message.text == '🗑️ Перезапустить бота':
+            self.bot.send_message(message.chat.id, "Бот перезапущен")
+            self.restart_bot()
         else:
             response = self.conversational_rag_chain.invoke({'input': message.text}, config={
                 "configurable": {"session_id": message.chat.id}
             })
             self.bot.send_message(message.chat.id, response['answer'])
+    
 
     def run(self):
         self.bot.polling(none_stop=True)
