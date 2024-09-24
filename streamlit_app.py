@@ -3,9 +3,8 @@ import os
 import uuid
 from llm_and_embeddings import create_conversational_rag_chain
 from get_retriever import extract_from_download
-os.environ['CURL_CA_BUNDLE'] = ''
 
-CREDENTIALS='YzYxYTQwYTgtZGE4ZC00NWEyLWFiOGEtZmQzNzExZDg1ZWQzOmZkMTg1OWE1LWM2YTAtNDNiNy05YzAwLTg0NjE3YWE0YmE4Mw=='
+CREDENTIALS='OGMwNTUyMzktMjM0Ny00MDIxLThiZWQtNDlkY2E3ODkxOTk5OmIyNTI4MDQ3LTEyNzQtNGIzMy1iZGNkLTNkNzg4MDEyZWY4Mg=='
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 
 def main_screen():
@@ -15,7 +14,6 @@ def main_screen():
     uploaded_file = st.file_uploader("Select a PDF file with minimal size for a faster response.", type="pdf", accept_multiple_files=True)
     
     if uploaded_file is not None:
-        # if uploaded_file.size <= 2000000:  # 2MB = 2,000,000 bytes
             with st.spinner("Processing PDF..."):
                 session_id=str(uuid.uuid4())
                 retriever = extract_from_download(uploaded_file,session_id)
@@ -33,8 +31,6 @@ def main_screen():
                         st.rerun()
                     else:
                         st.error("Failed to create conversation chain. Please try again.")
-        # else:
-        #     st.error("File size exceeds 2MB. Please upload a smaller file.")
 
 def chat_screen():
     st.title("💬 Talk to your PDF")

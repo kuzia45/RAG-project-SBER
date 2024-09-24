@@ -55,7 +55,7 @@ def download_pdf(response, dir_to_save, href):
 
 if __name__ == "__main__":
     href_file = 'hrefs.txt'
-    dir_to_save = './pdf_files/'
+    dir_to_save = './files/'
     path_http = "https://ai.gov.ru"
     hrefs = get_hrefs(href_file)
     for h in hrefs:

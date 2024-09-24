@@ -7,7 +7,7 @@ from llm_and_embeddings import get_embeddings
 import os
 
 documents = []
-for file in os.listdir('files'):
+for file in os.listdir('files')[:2]:
     if file.endswith('.pdf'):
         pdf_path = './files/' + file
         loader = PyPDFLoader(pdf_path)
