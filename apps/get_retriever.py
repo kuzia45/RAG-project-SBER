@@ -5,9 +5,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_community.document_loaders import TextLoader
-from apps.llm_and_embeddings import get_embeddings
+from llm_and_embeddings import get_embeddings
 
 os.environ['CURL_CA_BUNDLE'] = ''
+vector_store = FAISS.load_local(folder_path='''C:/Users/mi/Documents/Kostya's-RAG-project/data/db2''', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
 
 def extract_from_download(pdf_files, session_id):
     all=[]
@@ -21,7 +22,6 @@ def extract_from_download(pdf_files, session_id):
         text_splitter.split_documents(docs)
         all.extend(text_splitter.split_documents(docs))
         os.unlink(tmp_file_path)  # Delete the temporary file
-    embeddings = get_embeddings()
-    vectorstore = FAISS.from_documents(all, embeddings)
-    retriever = vectorstore.as_retriever()
+    FAISS.add_documents(self =vector_store, documents=all)
+    retriever = vector_store.as_retriever(search_kwargs={"k": 3})
     return retriever

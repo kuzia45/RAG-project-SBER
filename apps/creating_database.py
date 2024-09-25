@@ -1,23 +1,23 @@
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_community.document_loaders import TextLoader
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from llm_and_embeddings import get_embeddings
 import os
 
 documents = []
-for file in os.listdir('files')[:2]:
+for file in os.listdir('/data/files')[:2]:
     if file.endswith('.pdf'):
-        pdf_path = './files/' + file
-        loader = PyPDFLoader(pdf_path)
+        pdf_path = '/data/files' + file
+        loader = PyMuPDFLoader(pdf_path)
         documents.extend(loader.load())
     elif file.endswith('.docx') or file.endswith('.doc'):
-        doc_path = './files/' + file
+        doc_path = '/data/files' + file
         loader = Docx2txtLoader(doc_path)
         documents.extend(loader.load())
     elif file.endswith('.txt'):
-        text_path = './files/' + file
+        text_path = '/data/files' + file
         loader = TextLoader(text_path, encoding='utf-8')
         documents.extend(loader.load())
 

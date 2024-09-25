@@ -6,7 +6,7 @@ from telebot import types
 from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
-from llm_and_embeddings import get_embeddings, create_conversational_rag_chain  # Импортируйте необходимые модули
+from llm_and_embeddings import get_embeddings, create_conversational_rag_chain 
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
