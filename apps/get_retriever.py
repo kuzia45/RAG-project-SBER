@@ -5,7 +5,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_community.document_loaders import TextLoader
-from llm_and_embeddings import get_embeddings
+from apps.llm_and_embeddings import get_embeddings
 
 os.environ['CURL_CA_BUNDLE'] = ''
 

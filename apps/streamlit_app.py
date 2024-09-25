@@ -1,8 +1,8 @@
 import streamlit as st
 import os
 import uuid
-from llm_and_embeddings import create_conversational_rag_chain
-from get_retriever import extract_from_download
+from apps.llm_and_embeddings import create_conversational_rag_chain
+from apps.get_retriever import extract_from_download
 
 CREDENTIALS='OGMwNTUyMzktMjM0Ny00MDIxLThiZWQtNDlkY2E3ODkxOTk5OmIyNTI4MDQ3LTEyNzQtNGIzMy1iZGNkLTNkNzg4MDEyZWY4Mg=='
 MODEL_NAME = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"

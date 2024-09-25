@@ -3,7 +3,7 @@ from telebot import types
 import os
 import sys
 from dotenv import load_dotenv
-from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
+from apps.llm_and_embeddings import create_conversational_rag_chain, get_embeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
