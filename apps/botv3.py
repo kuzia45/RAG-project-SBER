@@ -18,7 +18,7 @@ class RAGBot:
     def __init__(self, token, credentials):
         self.bot = telebot.TeleBot(token)
         self.credentials = credentials
-        self.vector_store = FAISS.load_local(folder_path='db/', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
+        self.vector_store = FAISS.load_local(folder_path='db2/', embeddings=get_embeddings(), allow_dangerous_deserialization=True)
         self.retriever = self.vector_store.as_retriever(search_kwargs={"k": 3})
         self.conversational_rag_chain, _ = create_conversational_rag_chain(retriever=self.retriever, credentials=self.credentials)
         self.file_names = self.get_file_names()

@@ -21,7 +21,7 @@ def find_files():
     hrefs = []
     count_hrefs = 0
     print('Main Cycle')
-    while count_hrefs < 200:
+    while count_hrefs < 1000:
         hrefs_list = soup.find_all('a', class_ = 'knowledgeBaseCard__title')
         for a in hrefs_list:
             hrefs.append(a['href'])
