@@ -31,7 +31,8 @@ def get_hrefs(filename):
     hrefs = []
     with open(filename, 'r') as f:
         hrefs = [line.rstrip('\n') for line in f.readlines()]
-    return(hrefs[303:])
+    return(hrefs[392:])
+
 
 
 def make_full_href(path, href):
@@ -58,7 +59,7 @@ def download_pdf(response, dir_to_save, href):
 
 if __name__ == "__main__":
     href_file = 'hrefs.txt'
-    dir_to_save = '''C:/Users/mi/Documents/Kostya's-RAG-project/data/files2/'''
+    dir_to_save = './files/'
     path_http = "https://ai.gov.ru"
     hrefs = get_hrefs(href_file)
     for h in hrefs:

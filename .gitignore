@@ -1,6 +1,6 @@
 .venv/
 __pycache__/
 files/
-db/
 .env
 files2/
+venv/
