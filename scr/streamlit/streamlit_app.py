@@ -2,15 +2,15 @@ import streamlit as st
 import os
 import uuid
 from langchain_community.vectorstores import FAISS
-from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
-from get_retriever import extract_from_download
+from scr.utils.llm_and_embeddings import create_conversational_rag_chain, get_embeddings
+from scr.utils.get_retriever import extract_from_download
 
 CREDENTIALS = os.getenv('CREDENTIALS')
-retriever = FAISS.load_local(folder_path='''C:/Users/mi/Documents/Kostya's-RAG-project/data/db2''', 
+retriever = FAISS.load_local(folder_path=os.path.abspath('./db/'),
                                             embeddings=get_embeddings(), 
                                             allow_dangerous_deserialization=True).as_retriever(search_kwargs={"k": 3})
 st.session_state.retriever = retriever
-
+st.session_state.conversational_rag_chain, st.session_state.history_store = create_conversational_rag_chain(st.session_state.retriever, credentials=CREDENTIALS)
 def main_screen():
     st.title("📚 RAG-бот")
     st.write("Привет, я чат-бот. Загрузи в меня документы")
@@ -22,10 +22,6 @@ def main_screen():
                 retriever = extract_from_download(uploaded_file, session_id=session_id)
                 if retriever:
                     st.session_state.retriever = retriever
-                    for title in uploaded_file:
-                        st.session_state.pdf_name += "\n\n"
-                        st.session_state.pdf_name += title.name
-                        st.session_state.pdf_name += "\n\n"
                     st.session_state.conversational_rag_chain, st.session_state.history_store = create_conversational_rag_chain(st.session_state.retriever, credentials=CREDENTIALS)
                     if st.session_state.conversational_rag_chain:
                         st.success("Документ успешно загружен")
@@ -37,17 +33,20 @@ def main_screen():
 
 def chat_screen():
     st.title("💬 RAG-бот")
+    st.sidebar.title('Меню')
     if retriever:
-        st.session_state.conversational_rag_chain, st.session_state.history_store = create_conversational_rag_chain(st.session_state.retriever, credentials=CREDENTIALS)
         session_id=str(uuid.uuid4())
         st.session_state.session_id = session_id
-    st.sidebar.title("Список загруженных документов")
-    st.sidebar.info(f"PDF: {st.session_state.pdf_name}")
     if st.sidebar.button("Загрузить новый документ"):
         st.session_state.page = "main"
         st.session_state.chat_history = []
         st.session_state.history_store = None
         st.session_state.session_id = None
+        st.rerun()
+    if st.sidebar.button("Очистить историю чата"):
+        st.session_state.chat_history = []
+        if st.session_state.session_id in st.session_state.history_store:
+            del st.session_state.history_store[st.session_state.session_id]
         st.rerun()
 
     for message in st.session_state.chat_history:
@@ -63,38 +62,19 @@ def chat_screen():
         
         with st.chat_message("assistant"):
             response_placeholder = st.empty()
-            full_response = ""
-            try:
-                for chunk in st.session_state.conversational_rag_chain.stream(
+            full_response = st.session_state.conversational_rag_chain.invoke(
                     {"input": user_input},
                     config={
                         "configurable": {"session_id": st.session_state.session_id}
                     },
-                ):
-                    if isinstance(chunk, dict):
-                        content = chunk.get('answer') or chunk.get('text') or chunk.get('content') or ''
-                        if content:
-                            full_response += content
-                            response_placeholder.markdown(full_response + "▌")
-                    elif isinstance(chunk, str):
-                        full_response += chunk
-                        response_placeholder.markdown(full_response + "▌")
-                if full_response:
-                    response_placeholder.markdown(full_response)
-                else:
-                    response_placeholder.markdown("Не удалось сгенерировать ответ")
-            except Exception as e:
-                st.error(f"Ошибка: {str(e)}")
-                full_response = "При попытке генерации ответа произошла ошибка. Попробуйте еще раз."
-                response_placeholder.markdown(full_response)
+                )
+            if full_response:
+                response_placeholder.markdown(full_response['answer'])
+                print (full_response)
+            else:
+                response_placeholder.markdown("Не удалось сгенерировать ответ")
         
         st.session_state.chat_history.append({"role": "assistant", "content": full_response})
-
-    if st.button("Очистить историю чата"):
-        st.session_state.chat_history = []
-        if st.session_state.session_id in st.session_state.history_store:
-            del st.session_state.history_store[st.session_state.session_id]
-        st.rerun()
 
 def main():
     st.set_page_config(page_title="RAG-бот", page_icon="📚", layout="wide")
