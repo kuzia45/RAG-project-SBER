@@ -7,7 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 
-sys.path.append('./scr/utils')
+sys.path.append('./src/utils')
 from llm_and_embeddings import get_embeddings, create_conversational_rag_chain 
 
 # Настройка логирования

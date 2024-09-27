@@ -1,10 +1,13 @@
 import streamlit as st
+import sys
 import os
 import uuid
 from langchain_community.vectorstores import FAISS
-from scr.utils.llm_and_embeddings import create_conversational_rag_chain, get_embeddings
-from scr.utils.get_retriever import extract_from_download
 
+
+sys.path.append('./src/utils')
+from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
+from get_retriever import extract_from_download
 CREDENTIALS = os.getenv('CREDENTIALS')
 retriever = FAISS.load_local(folder_path=os.path.abspath('./db/'),
                                             embeddings=get_embeddings(), 
