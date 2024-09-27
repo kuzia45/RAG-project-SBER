@@ -8,7 +8,7 @@ from langchain_community.document_loaders import TextLoader
 from llm_and_embeddings import get_embeddings
 
 os.environ['CURL_CA_BUNDLE'] = ''
-vector_store = FAISS.load_local(folder_path=os.path.abspath('db/'), embeddings=get_embeddings(), allow_dangerous_deserialization=True)
+vector_store = FAISS.load_local(folder_path=os.path.abspath('data/db/'), embeddings=get_embeddings(), allow_dangerous_deserialization=True)
 
 def extract_from_download(pdf_files, session_id):
     all=[]

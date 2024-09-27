@@ -8,8 +8,8 @@ from langchain_community.vectorstores import FAISS
 sys.path.append('./src/utils')
 from llm_and_embeddings import create_conversational_rag_chain, get_embeddings
 from get_retriever import extract_from_download
-CREDENTIALS = os.getenv('CREDENTIALS')
-retriever = FAISS.load_local(folder_path=os.path.abspath('./db/'),
+CREDENTIALS = os.getenv('CREDENTIALS')  
+retriever = FAISS.load_local(folder_path=os.path.abspath('data/db/'),
                                             embeddings=get_embeddings(), 
                                             allow_dangerous_deserialization=True).as_retriever(search_kwargs={"k": 3})
 st.session_state.retriever = retriever
